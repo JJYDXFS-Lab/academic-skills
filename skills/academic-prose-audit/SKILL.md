@@ -7,15 +7,13 @@ description: Read-only contextual academic phrasing/register audit of an authori
 
 ## 1. Fix scope and boundaries
 
-An optional author-provided style sample can calibrate disciplinary register within the authorized local review boundary.
-
 Identify authoritative revision/hash, reachable prose files/sections, exclusions, discipline, audience, terminology and author preferences. Record a read-only boundary and obey the local project's locality and source-of-truth rules: a local clone may be stale. Keep unpublished prose local; do not upload, edit or push manuscript sources without exact approval or run untrusted TeX with shell escape. The main task is to assess academic phrasing and register for natural, precise author voice; grammar and TeX screening are supporting safeguards. "AI flavor" names a stylistic impression, not AI-authorship detection, a score, or evasion advice. This is not a claim-support verdict.
 
 **Done:** revision, sections, exclusions, terminology, locality and write boundary are explicit.
 
 ## 2. Read prose in context
 
-Read [contextual phrasing checks](references/contextual-phrasing.md) for diagnostic questions and counterexamples. Judge a sentence's function in its paragraph, not a phrase list.
+Read [contextual phrasing checks](references/contextual-phrasing.md) for diagnostic questions and counterexamples, including repeated sentence/punctuation patterns and sentence information content. Judge a sentence's function in its paragraph, not a phrase list.
 
 Inspect sentences with paragraph and section purpose. Distinguish prose from TeX commands, equations, citation keys, labels, comments, Bib entries, protected names and literal quotations. Do not change protected spans by default; editing quotations requires explicit request. Track locations and coverage gaps for macros, generated inputs, unsupported syntax and missing files. Text search finds candidates but is not complete parsing.
 
@@ -24,6 +22,8 @@ Optional local triage, only after fixing an authorized file list: `python3 <skil
 The CLI's stdout includes manuscript snippets: keep console output, redirects and logs private. It validates every named file before printing any findings and fails with a coverage error on detected unclosed regions; a failed scan does not certify any portion of that file. Stderr reports skipped command-argument counts, including a rough count containing letters; these include citation keys and labels, so neither count measures reviewed prose or proves completeness. Prose inside command arguments (for example section headings or custom macros) is intentionally masked and must be reviewed separately in context.
 
 Examine academic phrasing in the paragraph's argument: empty or generic claims, promotional or overwritten language, stock transitions and repeated rhetorical templates, vague metaphors, synonym churn, unnatural collocations, redundant or unclear wording, generic conclusions and overconfident phrasing. Explain what this particular use obscures or overstates. Do not use banned-word lists: no word alone proves a problem. `story` may name a study or story-generation task; `buy` may denote a purchase or buy order. Titles, quotations and technical terms may legitimately use either. Preserve legitimate disciplinary style and deliberate repetition; neither ordinary wording nor stylistic awkwardness is evidence of AI generation.
+
+Across neighboring sentences and paragraphs, check repeated openings, transitions, symmetrical constructions, conclusion templates and punctuation patterns. For em dashes (TeX `---` or Unicode `—`, not TeX en-dash `--` ranges), inspect their actual count in a stated passage and what each interruption does: a single useful clarification may belong, while recurring dramatic asides can obscure the argument. No dash ban or arbitrary frequency threshold applies. For a potentially generic sentence, ask what action, result, comparison or condition it communicates and whether replacing its method/domain names would leave only interchangeable framing. This substitution is a question, not a verdict: topic introductions, roadmaps and meaningful summaries can be concise and general. Distinguish unsupported promotional claims and absent referents/comparators from useful summary; do not invent specifics, numbers or evidence to make a sentence look informative. Suggest removing empty framing where meaning permits; otherwise ask the author for the missing detail.
 
 Before suggesting a replacement, preserve quantities and units, comparison baselines, scope and negation, conditions and quantifiers, modality, causal direction, technical terms, necessary hedges, citation attachment and author voice. Prefer the smallest natural change that suits the domain. Do not strengthen claims for polish, reflexively weaken supported claims, or replace domain terms with ornate synonyms. Ask the author when intent is unclear. Passive voice, `only` and hedges are context cues, not defects by themselves.
 
@@ -38,6 +38,8 @@ State actual execution mode (sequential or parallel), worker count and any worke
 Escape HTML attribute values as well as text; render source-derived links only after validating an `https:` or `http:` scheme. Keep local/file and script schemes as escaped plain text.
 
 Use `substantive` when wording distorts meaning/calibration, `editorial` for demonstrable phrasing/register/clarity problems, and keep optional taste preferences distinct from defects. Do not rewrite a paragraph to fix one phrase. Omit weak findings or mark them as author questions; never infer a problem from a stock word alone. Include useful deliberate nonissues. No findings means no high-confidence issues in reviewed scope, not perfect prose.
+
+For pattern findings, give the observed examples and count/scope (for example, the openings in a named paragraph), then explain why the repetition matters here; do not present a punctuation count alone as a defect. For specificity findings, name the missing referent/comparison or unsupported assertion and give a meaning-preserving local suggestion or author question. Both remain style/clarity judgments, never authorship claims.
 
 Label source-support questions `support unreviewed`; refer them to `latex-bib-audit` Layer 3 only if explicitly enabled. Its default Layers 1/2 do not validate scientific claims. Tone alone cannot show a claim is false.
 
