@@ -1,0 +1,5 @@
+# Opt-in claim evidence (Layer 3)
+
+Only after the owner explicitly requests claim verification: resolve the citation key to its actual item, DOI/identifier, version and publication status. Check the original primary paper, official open-access version, or author-accepted manuscript; do not use secondary summaries as substitute. Public identifier/title queries are allowed only within the approved access boundary; unpublished claim text stays local. Record URL/identifier, version, access date, and precise section plus page, paragraph, equation, figure or table. For HTML without pagination, use heading and unique paragraph/table locator; if no pinpoint is accessible, mark `unverified` and state what was attempted.
+
+Compare the exact local claim with the source's population, method, quantity, qualifiers and caveats. Mark directly supported, supported with qualification, contradicted or unable to verify; an abstract, snippet, metadata match or successful PDF download alone does not support a detailed claim. Keep disagreements with Layer 1 identity and Layer 2 mapping visible. Do not invent text, page numbers, intended references or corrections.

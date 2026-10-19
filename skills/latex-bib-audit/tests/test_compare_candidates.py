@@ -13,6 +13,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import compare_candidates as comparator
 
 
@@ -177,8 +178,7 @@ class CandidateTests(unittest.TestCase):
                 with self.assertRaisesRegex(comparator.InputError, "key mismatch"):
                     comparator.load_entries(path)
                 fake.parse_string.return_value = SimpleNamespace(entries={"A": entry({"TITLE": "Work"})})
-                with self.assertRaisesRegex(comparator.InputError, "field casing mismatch"):
-                    comparator.load_entries(path)
+                self.assertEqual(comparator.load_entries(path)["A"].fields["title"], "Work")
             self.assertEqual(path.read_bytes(), b"@article{A,title={Work}}")
 
 
@@ -203,8 +203,8 @@ class PybtexIntegrationTests(unittest.TestCase):
                 self.assertEqual(fields["title"], "Work")
                 self.assertEqual(len(fields["author"]), 2)
             else:
-                with self.assertRaisesRegex(comparator.InputError, "mismatch"):
-                    comparator.load_entries(path)
+                entries = comparator.load_entries(path)
+                self.assertEqual(comparator.effective_fields("CaseKey", entries)["title"], "Work")
             self.assertEqual(path.read_bytes(), payload)
 
     def test_real_parser_rejects_case_or_count_mismatch(self):

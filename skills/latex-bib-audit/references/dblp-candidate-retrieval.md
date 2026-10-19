@@ -1,20 +1,7 @@
-# DBLP candidate retrieval
+# Candidate retrieval and limitations
 
-This abstracts ideas from an owner-provided bibliography notebook reviewed on 2026-10-19. Its code and inputs were neither executed nor copied. This guidance is **not** a downloader, permission to bypass access controls, or proof of metadata correctness.
+`scripts/fetch_candidates.py` is optional, explicit network work: select keys and bound `--limit` (1–20), then provide two **new** output paths. By default it sends only syntactically validated DOI or arXiv identifiers to Crossref/arXiv; entries without valid identifiers remain unverified **without a network query**. Use `--public-title-search` only after confirming the source-derived title and first author are already public: this enables a bounded Crossref title+author fallback. Never send private notes, abstracts or unpublished prose. DOI uses Crossref `/works/{doi}`; arXiv uses Atom query. Each key stays unchanged. Responses are metadata candidates, not validated replacements; publication version, authors, venue and article identity need primary-source review. Failed, HTML, conflicting and ambiguous results remain original entries and get `unverified` ledger records. Retry-After numeric or HTTP-date is bounded, retries are limited, response size is bounded; no challenge solving.
 
-The source notebook parsed BibTeX, normalized titles, searched a bounded set of DBLP hits, selected by venue/year preference, fetched BibTeX, replaced keys with regex and appended output. It could silently omit incomplete inputs, insert title-only placeholders after failed retrieval and attempted automated challenge solving. These are not verified entries or acceptable automatic replacement behavior.
+The candidate `.bib` preserves original entries for unsuccessful lookups and updates only candidate title/year/DOI/journal when the source supplies a unique matching result. The separate JSON ledger records status, source endpoint, source fields and ambiguity, input SHA-256/path/mtime/size, selected keys and explicit `external_cache: none`. Output files use exclusive creation (mode 0600); do not redirect over an existing file. No persistent HTTP cache is created; delete local candidate/ledger under the project's retention policy. The source `.bib` remains unchanged. Inspect both outputs together; do not substitute an unverified candidate into a manuscript.
 
-For a separately authorized candidate helper:
-
-- Parse and retain every original entry/key; reconcile input/output counts and report missing titles/keys.
-- Keep DBLP record IDs separate from manuscript keys. Compare DOI/arXiv, authors and intended publication version; normalized title or top hits alone cannot resolve identity.
-- Mark failures and ambiguous results `unverified` with actual error; never substitute synthetic placeholders for richer input entries.
-- Write separate candidate and field-difference ledgers with deterministic collision/rerun behavior. Parse returned BibTeX and change candidate keys structurally, not with regex.
-- Preserve case protection, macros, inherited/custom fields and legitimate versions. Require explicit approval before manuscript changes.
-- Reject HTML as BibTeX, bound requests/retries/output and honor numeric or HTTP-date Retry-After.
-- Never automate challenge solving or synthetic challenge timing. Record blocked access and seek another authoritative source or an owner-provided export.
-- Treat DBLP as corroboration; resolve conflicts using publisher, proceedings or appropriate arXiv records.
-
-Candidate ledger: `input key | original entry | DBLP ID/source | identity/version | matching evidence | field differences | retrieval/ambiguity status`.
-
-This only informs Layer 1; it establishes neither Layer 2 mapping nor Layer 3 support. A future helper needs focused tests for incomplete entries, ambiguous versions, HTML/errors, lookup failures and repeated runs.
+DBLP is a corroborating index, not publisher evidence or an automatic source of replacement entries. Do not copy a candidate notebook's placeholder rows, key-renaming regex or automated access-challenge workarounds. Resolve disagreements with publisher/proceedings records or the appropriate original preprint version. `scripts/compare_candidates.py` performs same-key structural triage offline; neither helper performs claim verification.

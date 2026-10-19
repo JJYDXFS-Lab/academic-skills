@@ -2,6 +2,7 @@
 
 import argparse
 import contextlib
+import hashlib
 import io
 import json
 import os
@@ -19,6 +20,43 @@ PUBLIC_FIELDS = frozenset({
     "booktitle", "publisher", "volume", "number", "pages", "eid", "doi",
     "eprint", "archiveprefix", "primaryclass", "version",
 })
+
+
+def source_stamp(path):
+    stat = path.stat()
+    return {"path": str(path.resolve()), "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "mtime_ns": stat.st_mtime_ns, "size_bytes": stat.st_size}
+
+
+def field_names(body):
+    """Preflight top-level assignments; parser still decides BibTeX semantics."""
+    names = []
+    depth = 0
+    quoted = False
+    escaped = False
+    index = 0
+    while index < len(body):
+        char = body[index]
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == '"' and depth == 0:
+            quoted = not quoted
+        elif not quoted:
+            if char == "{":
+                depth += 1
+            elif char == "}" and depth:
+                depth -= 1
+            elif depth == 0 and (index == 0 or body[index - 1] == ","):
+                match = re.match(r"\s*([A-Za-z][A-Za-z0-9_-]*)\s*=", body[index:])
+                if match:
+                    names.append(match.group(1))
+        index += 1
+    lowered = [name.lower() for name in names]
+    if len(lowered) != len(set(lowered)):
+        raise InputError("duplicate field names in entry (case-insensitive)")
+    return names
 
 
 def entry_keys(text):
@@ -69,10 +107,11 @@ def entry_keys(text):
             if not key or any(char.isspace() for char in key):
                 raise InputError("empty or invalid entry key")
             keys.append(key)
+            field_names(text[key_end + 1:position])
         position += 1
     if len(keys) != len(set(keys)):
         duplicates = sorted(key for key in set(keys) if keys.count(key) > 1)
-        raise InputError("duplicate entry keys")
+        raise InputError("duplicate entry keys: " + ", ".join(duplicates))
     return keys
 
 
@@ -100,10 +139,8 @@ def load_entries(path):
     if len(keys) != len(data.entries) or set(keys) != set(data.entries):
         raise InputError("entry count/key mismatch; refusing partial comparison")
     for entry in data.entries.values():
-        if any(name != name.lower() for name in entry.fields) or any(
-            name != name.lower() for name in entry.persons
-        ):
-            raise InputError("parser field casing mismatch; refusing partial comparison")
+        entry.fields = {name.lower(): value for name, value in entry.fields.items()}
+        entry.persons = {name.lower(): value for name, value in entry.persons.items()}
     return data.entries
 
 
@@ -130,7 +167,27 @@ def effective_fields(key, entries, trail=()):
 def normalize(value):
     if isinstance(value, list):
         return [normalize(item) for item in value]
-    return " ".join(str(value).replace("{", "").replace("}", "").split()).casefold()
+    text = str(value)
+    text = re.sub(r"\\(?:['`\"^~=.uvH])\s*\{?([A-Za-z])\}?", r"\1", text)
+    text = re.sub(r"\\(ae|oe|ss|o|l)\b", lambda match: {
+        "ae": "ae", "oe": "oe", "ss": "ss", "o": "o", "l": "l"
+    }[match.group(1).lower()], text, flags=re.I)
+    return " ".join(text.replace("{", "").replace("}", "").split()).casefold()
+
+
+def duplicate_flags(entries):
+    groups = {}
+    for key in sorted(entries):
+        fields, _ = resolved_fields(key, entries)
+        doi = normalize(fields.get("doi", "")).removeprefix("https://doi.org/")
+        title = normalize(fields.get("title", ""))
+        authors = normalize(fields.get("author", []))
+        year = normalize(fields.get("year", ""))
+        if doi:
+            groups.setdefault(("doi", doi), []).append(key)
+        if title and authors and year:
+            groups.setdefault(("title_author_year", title, tuple(authors), year), []).append(key)
+    return [{"basis": identity[0], "keys": keys} for identity, keys in groups.items() if len(keys) > 1]
 
 
 def compare_entries(original, candidate):
@@ -194,7 +251,9 @@ def compare_entries(original, candidate):
         "candidate_count": len(candidate),
         "unmatched_candidate_keys": sorted(set(candidate) - set(original)),
         "entries": results,
-        "limitations": "Local same-key structural comparison only; no source verification, cross-key matching, TeX mapping, or claim support.",
+        "original_duplicate_flags": duplicate_flags(original),
+        "candidate_duplicate_flags": duplicate_flags(candidate),
+        "limitations": "Local same-key structural comparison and cross-key duplicate flags only; no source verification, TeX mapping, or claim support.",
     }
 
 
@@ -245,6 +304,8 @@ def main(argv=None):
         original = load_entries(args.original)
         candidate = load_entries(args.candidate)
         report = compare_entries(original, candidate)
+        report["input_provenance"] = {"original": source_stamp(args.original),
+                                      "candidate": source_stamp(args.candidate)}
         payload = json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
         if args.output is not None:
             write_exclusive(args.output, payload, (args.original, args.candidate))
