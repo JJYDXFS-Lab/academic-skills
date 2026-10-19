@@ -14,10 +14,14 @@ Read /path/to/academic-skills/skills/latex-bib-audit/SKILL.md and
 For the authorized manuscript revision <hash>, main file <main.tex>, and
 sections <scope>, run bibliography Layers 1 and 2 and a contextual prose audit
 on the same frozen revision. Layer 3 is disabled. Keep the manuscript and Bib
-files unchanged; put findings in a separate new <report-directory> outside
-the source tree. Report file:line/key, original/proposed text or field,
-source evidence, reasoning, uncertainty and coverage gaps. No auto-fix.
+files unchanged; author separate, fresh citation-audit.html and prose-audit.html
+in an authorized <report-directory> outside the source tree. Both must open
+offline with inline CSS, no external assets/network, and HTML-escaped sources.
+Report file:line/key, original/proposed text or field, source evidence,
+reasoning, severity, uncertainty and coverage gaps. No auto-fix.
 ```
+
+The default reports are agent-authored standalone HTML, with a readable scope/revision summary, layer coverage where applicable, severity and unverified counts, and a visible `© <report year> JJYDXFS & Atom (原子). All rights reserved.` footer linking [JJYDXFS](https://jjydxfs.github.io/) and [Atom (原子)](https://atom-of-jjydxfs.github.io/). Output names can be adapted; never overwrite a report. Markdown is optional on user request. Escape all manuscript-derived HTML; no frontend framework or JavaScript is needed.
 
 The plain Python optional triage tools are `python3 skills/latex-bib-audit/compare_candidates.py --help` and `python3 skills/academic-prose-audit/scripts/prose_candidates.py --help`. The former compares two existing same-key BibTeX files and requires separately installed `pybtex`; its real-parser integration tests are skipped when that library is absent, so actual parser behavior remains unverified here. Use `python3 skills/latex-bib-audit/compare_candidates.py original.bib candidate.bib --output /fresh/report-directory/comparison.json` to create a **new** report exclusively after a successful comparison. The latter is stdlib-only and prints non-exhaustive questions for explicitly named TeX files. Neither tool discovers the project or performs a complete audit. Both can print source-derived content: keep reports, stdout and stderr local/private. Never redirect stdout into a source or existing report: shell redirection can truncate a file before the script runs. The agent, not these scripts, must locate sources and judge evidence.
 
