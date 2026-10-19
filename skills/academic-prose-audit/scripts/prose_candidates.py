@@ -1,4 +1,4 @@
-"""Conservative, read-only TeX prose triage; not a TeX parser or an editor."""
+"""Conservative, read-only prose candidate locator; not a full parser or audit."""
 
 import argparse
 import re
@@ -12,11 +12,20 @@ QUESTIONS = (
     (re.compile(r"\byou\s+can\s+see\b", re.I), "Is the reader being asked to infer something unstated?"),
     (re.compile(r"\bneedless\s+to\s+say\b", re.I), "Does this preface add anything here?"),
     (re.compile(r"\blet's\b", re.I), "Is this conversational register intentional?"),
+    (re.compile(r"\b(?:in conclusion|to summarize|overall,? (?:these|our) (?:results|findings))\b", re.I),
+     "Does this ending add a specific inference in context?"),
+    (re.compile(r"\b(?:in recent years|it is important to note that|this paper (?:aims to|explores))\b", re.I),
+     "Does this opening establish a useful scope or merely frame the topic?"),
+    (re.compile(r"\b(?:groundbreaking|revolutionary|transformative|unprecedented|remarkable)\b", re.I),
+     "Is this adjective warranted by the stated evidence and disciplinary usage?"),
 )
 
 PROSE_ENVIRONMENTS = {"document", "abstract", "itemize", "enumerate", "description"}
+PROSE_COMMANDS = {"emph", "textit", "textbf", "footnote", "caption", "section", "subsection", "paragraph"}
 COMMAND = re.compile(r"\\([A-Za-z@]+|[^\n])")
 ENVIRONMENT = re.compile(r"\\(begin|end)\s*\{([^{}]+)\}")
+SENTENCE = re.compile(r"[^.!?\n]+[.!?](?=\s|$)")
+WORDS = re.compile(r"\b[A-Za-z]+(?:['’-][A-Za-z]+)*\b")
 
 
 class CoverageError(ValueError):
@@ -75,6 +84,7 @@ def scan_prose(source):
     math_close = None
     quote_close = None
     skipped = []
+    braces = []
 
     def hide(start, end):
         for offset in range(start, end):
@@ -155,17 +165,39 @@ def scan_prose(source):
                     if end == -1 or line_end != -1 and end > line_end:
                         raise CoverageError(source, start, "unclosed verb span")
                     position = end + 1
+            elif match.group(1) in PROSE_COMMANDS:
+                probe = match.end()
+                if source.startswith("*", probe):
+                    probe += 1
+                while probe < len(source) and source[probe].isspace():
+                    probe += 1
+                if probe < len(source) and source[probe] == "[":
+                    probe = group_end(source, probe, "[", "]")
+                    while probe < len(source) and source[probe].isspace():
+                        probe += 1
+                if probe < len(source) and source[probe] == "{":
+                    braces.append(probe)
+                    position = probe + 1
+                    hide(start, position)
+                    continue
+                position = probe
             else:
                 position = argument_end(source, match.end(), skipped)
         elif character == "{":
-            position = group_end(source, position, "{", "}")
+            braces.append(position)
+            position += 1
+        elif character == "}":
+            if not braces:
+                raise CoverageError(source, position, "unexpected closing brace")
+            braces.pop()
+            position += 1
         elif character == "$":
             math_close = "$$" if source.startswith("$$", position) else "$"
             position += len(math_close)
         elif source.startswith("``", position):
             quote_close = "''"
             position += 2
-        elif character in ('"', '“'):
+        elif character in ('"', '“') and not (character == '"' and position > 0 and source[position - 1].isdigit()):
             quote_close = '”' if character == '“' else '"'
             position += 1
         else:
@@ -179,6 +211,8 @@ def scan_prose(source):
         raise CoverageError(source, len(source), f"unclosed math span (expected {math_close})")
     if quote_close is not None:
         raise CoverageError(source, len(source), f"unclosed quotation (expected {quote_close})")
+    if braces:
+        raise CoverageError(source, braces[-1], "unclosed { group")
     return ScanResult("".join(visible), len(skipped), sum(skipped))
 
 
@@ -186,39 +220,136 @@ def visible_prose(source):
     return scan_prose(source).visible
 
 
+def scan_markdown(source):
+    """Conservatively mask Markdown syntax and quoted/code/link spans."""
+    visible = list(source)
+
+    def hide(start, end):
+        for offset in range(start, end):
+            if source[offset] != "\n":
+                visible[offset] = " "
+
+    position = 0
+    while position < len(source):
+        start = position
+        line_start = source.rfind("\n", 0, position) + 1
+        if position == line_start:
+            line_end = source.find("\n", position)
+            if line_end == -1:
+                line_end = len(source)
+            if re.match(r"\s{0,3}>", source[position:line_end]):
+                hide(position, line_end)
+                position = line_end
+                continue
+            fence = re.match(r"\s{0,3}(`{3,}|~{3,})", source[position:line_end])
+            if fence:
+                closing = re.search(r"(?m)^\s{0,3}" + re.escape(fence.group(1)[0]) +
+                                    "{" + str(len(fence.group(1))) + r",}[ \t]*$", source[line_end:])
+                if not closing:
+                    raise CoverageError(source, start, "unclosed Markdown fence")
+                position = line_end + closing.end()
+                hide(start, position)
+                continue
+        character = source[position]
+        if character == "`":
+            run = re.match(r"`+", source[position:]).group()
+            closing = source.find(run, position + len(run))
+            if closing == -1:
+                raise CoverageError(source, position, "unclosed Markdown code span")
+            position = closing + len(run)
+        elif character == "[" or source.startswith("![", position):
+            link = re.match(r"!?\[[^]\n]*\]\([^\n)]*\)|!?\[[^]\n]*\]\[[^]\n]*\]", source[position:])
+            if link:
+                position += len(link.group())
+            else:
+                position += 1
+                continue
+        elif character in ('"', '“') and not (character == '"' and position > 0 and source[position - 1].isdigit()):
+            closing_mark = '"' if character == '"' else '”'
+            closing = source.find(closing_mark, position + 1)
+            if closing == -1:
+                raise CoverageError(source, position, "unclosed Markdown quotation")
+            position = closing + 1
+        else:
+            position += 1
+            continue
+        hide(start, position)
+    return ScanResult("".join(visible), 0, 0)
+
+
 def candidates(source, visible=None):
     if visible is None:
         visible = visible_prose(source)
+    def emit(start, end, question):
+        line = source.count("\n", 0, start) + 1
+        line_start = visible.rfind("\n", 0, start) + 1
+        line_end = visible.find("\n", end)
+        if line_end == -1:
+            line_end = len(visible)
+        context = " ".join(visible[max(line_start, start - 65):min(line_end, end + 65)].split())
+        phrase = " ".join(source[start:end].split())
+        return line, phrase, context, question
+
     for pattern, question in QUESTIONS:
         for match in pattern.finditer(visible):
             if source[match.start():match.end()] != visible[match.start():match.end()]:
                 continue
-            line = source.count("\n", 0, match.start()) + 1
-            line_start = visible.rfind("\n", 0, match.start()) + 1
-            line_end = visible.find("\n", match.end())
-            if line_end == -1:
-                line_end = len(visible)
-            context = " ".join(visible[max(line_start, match.start() - 65):min(line_end, match.end() + 65)].split())
-            phrase = " ".join(source[match.start():match.end()].split())
-            yield line, phrase, context, question
+            yield emit(match.start(), match.end(), question)
+
+    dashes = list(re.finditer(r"(?<!-)---(?!-)|—", visible))
+    if dashes:
+        locations = ", ".join(str(source.count("\n", 0, match.start()) + 1) for match in dashes[:12])
+        for match in dashes[:12]:
+            yield emit(match.start(), match.end(),
+                       f"What does this interruption do? {len(dashes)} em dashes at lines {locations}"
+                       + (" (first 12 shown)" if len(dashes) > 12 else "") + ".")
+
+    for paragraph in re.finditer(r"[^\n]+(?:\n(?!\s*\n)[^\n]+)*", visible):
+        text = paragraph.group()
+        transitions = list(re.finditer(r"(?i)(?<!\w)(?:however|moreover|furthermore|additionally|in contrast|therefore)\b", text))
+        by_word = {}
+        for match in transitions:
+            by_word.setdefault(match.group().lower(), []).append(paragraph.start() + match.start())
+        for word, offsets in by_word.items():
+            if len(offsets) > 1:
+                for offset in offsets[:6]:
+                    yield emit(offset, offset + len(word),
+                               f"{len(offsets)} uses of '{word}' in this passage; are transitions doing distinct work?")
+
+        openings = {}
+        for sentence in SENTENCE.finditer(text):
+            words = list(WORDS.finditer(sentence.group()))
+            if len(words) >= 3:
+                start = paragraph.start() + sentence.start() + words[0].start()
+                opening = " ".join(word.group().lower() for word in words[:3])
+                openings.setdefault(opening, []).append((start, words[2].end() - words[0].start()))
+            if len(words) > 38:
+                start = paragraph.start() + sentence.start() + words[0].start()
+                yield emit(start, start + len(words[0].group()),
+                           f"Approx. {len(words)} visible words in this sentence; is its structure easy to follow?")
+        for opening, offsets in openings.items():
+            if len(offsets) > 1:
+                for offset, length in offsets[:6]:
+                    yield emit(offset, offset + length,
+                               f"{len(offsets)} sentences start '{opening}' in this passage; is repetition useful?")
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Read-only, non-exhaustive TeX prose candidate questions; stdout contains manuscript snippets (keep output private)")
-    parser.add_argument("files", nargs="+", type=Path, help="explicitly authorized .tex files only")
+    parser = argparse.ArgumentParser(description="Read-only, non-exhaustive prose candidate questions; stdout contains manuscript snippets (keep output private)")
+    parser.add_argument("files", nargs="+", type=Path, help="explicitly authorized UTF-8 .tex, .md or .txt files only")
     args = parser.parse_args(argv)
     prepared = []
     for path in args.files:
-        if path.suffix.lower() != ".tex" or not path.is_file():
-            parser.error(f"expected an existing .tex file: {path}")
+        if path.suffix.lower() not in (".tex", ".md", ".txt") or not path.is_file():
+            parser.error(f"expected an existing .tex, .md or .txt file: {path}")
         try:
             source = path.read_text(encoding="utf-8")
-            scan = scan_prose(source)
+            scan = scan_prose(source) if path.suffix.lower() == ".tex" else scan_markdown(source)
         except (OSError, UnicodeError, CoverageError) as error:
             parser.error(f"{path}: {error}")
         prepared.append((path, source, scan))
     print("Privacy: stdout contains manuscript snippets; keep output local/private. "
-          "Non-exhaustive heuristic triage, not TeX parsing or an authorship/claim verdict; "
+          "Non-exhaustive heuristic triage, not a full audit or an authorship/claim verdict; "
           "check all context manually. Unsupported markup may be missed or skipped.", file=sys.stderr)
     for path, source, scan in prepared:
         print(f"{path}: skipped command arguments: {scan.skipped_arguments} "
