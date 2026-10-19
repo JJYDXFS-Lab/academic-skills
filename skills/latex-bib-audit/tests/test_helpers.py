@@ -3,6 +3,7 @@ import tempfile
 import json
 import contextlib
 import io
+import os
 import unittest
 import urllib.error
 from datetime import datetime, timedelta, timezone
@@ -66,6 +67,11 @@ class HelperTests(unittest.TestCase):
                                                                  public_title_search=True)
         self.assertIsNone(candidate)
         self.assertEqual(record["match_count"], 2)
+
+    def test_doi_resolver_normalized_before_lookup(self):
+        with mock.patch.object(fetch_candidates, "crossref_work", return_value=([], "source")) as lookup:
+            fetch_candidates.candidate_for("k", entry({"doi": "https://doi.org/10.1234/ABC"}))
+        self.assertEqual(lookup.call_args.kwargs["doi"], "10.1234/abc")
 
     def test_fetch_writes_exclusive_outputs_preserves_original_and_unverified(self):
         class FakeBibliography:
@@ -146,6 +152,45 @@ class HelperTests(unittest.TestCase):
             with mock.patch.object(citation_inventory, "source_stamp", return_value={}):
                 citation_inventory.corroborate(report, aux, root / "main.tex")
             self.assertIn("aux_corroboration", report)
+
+    def test_nested_inputs_resolve_from_main_and_ignore_non_cite_commands(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "sections").mkdir()
+            (root / "main.tex").write_text("\\input{sections/one}\n", encoding="utf-8")
+            (root / "sections/one.tex").write_text(
+                "\\input{two}\\addbibresource{refs.bib}\\cite{actual}\\excite{ghost}\\recite{ghost}\n",
+                encoding="utf-8")
+            (root / "two.tex").write_text("\\textcite{other}\n", encoding="utf-8")
+            bib = root / "refs.bib"
+            bib.write_text("dummy", encoding="utf-8")
+            with mock.patch.object(citation_inventory, "load_entries", return_value={
+                "actual": entry({}), "other": entry({})}):
+                report = citation_inventory.inventory(root / "main.tex", bib)
+            self.assertEqual(set(report["locations"]), {"actual", "other"})
+            self.assertEqual(len(report["sources"]), 3)
+            self.assertEqual(report["gaps"], [])
+
+    def test_multiple_bib_resources_and_aux_freshness(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            main = root / "main.tex"
+            main.write_text("\\bibliography{first,second}\n\\cite{known}\n", encoding="utf-8")
+            bib = root / "first.bib"
+            bib.write_text("dummy", encoding="utf-8")
+            aux = root / "main.aux"
+            aux.write_text("\\citation{known}\n", encoding="utf-8")
+            os.utime(aux, ns=(1, 1))
+            with mock.patch.object(citation_inventory, "load_entries", return_value={"known": entry({})}):
+                report = citation_inventory.inventory(main, bib)
+            self.assertTrue(any("multiple Bib resources" in gap["reason"] for gap in report["gaps"]))
+            self.assertFalse(any("not matched" in gap["reason"] for gap in report["gaps"]))
+            citation_inventory.corroborate(report, aux, main)
+            self.assertNotIn("aux_corroboration", report)
+            self.assertTrue(any("stale auxiliary" in gap["reason"] for gap in report["gaps"]))
+            os.utime(aux, ns=(main.stat().st_mtime_ns + 10_000_000_000,) * 2)
+            citation_inventory.corroborate(report, aux, main)
+            self.assertEqual(report["aux_corroboration"]["keys"], ["known"])
 
     def test_crossref_inheritance_transitive_and_nocite_all(self):
         with tempfile.TemporaryDirectory() as directory:

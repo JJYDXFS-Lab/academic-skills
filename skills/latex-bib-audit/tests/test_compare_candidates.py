@@ -54,6 +54,13 @@ class CandidateTests(unittest.TestCase):
         self.assertIn("DOI conflict", report["entries"][0]["issues"])
         self.assertIn("publication/version fields differ; review versions manually", report["entries"][0]["issues"])
 
+    def test_equivalent_doi_forms_do_not_flag_conflict(self):
+        original = {"a": entry({"doi": "doi:10.1234/ABC", "title": "Work"}, ["Author"])}
+        candidate = {"a": entry({"doi": "https://doi.org/10.1234/abc", "title": "Work"}, ["Author"])}
+        result = comparator.compare_entries(original, candidate)["entries"][0]
+        self.assertNotIn("doi", result["differences"])
+        self.assertNotIn("DOI conflict", result["issues"])
+
     def test_author_order_and_missing_title(self):
         first = {"a": entry({"title": "X"}, ["Alpha", "Beta"])}
         second = {"a": entry({}, ["Beta", "Alpha"])}

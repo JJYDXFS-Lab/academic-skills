@@ -14,8 +14,13 @@ def strip_comments(line):
     return re.split(r"(?<!\\)%", line, maxsplit=1)[0]
 
 
+CITATION = r"(?:nocite|(?:cite|autocite|parencite|textcite|footcite|supercite|smartcite)\w*)"
+
+
 def inventory(main, bib):
     entries = load_entries(bib)
+    main = main.resolve()
+    base = main.parent
     seen = set()
     locations = {}
     gaps = []
@@ -40,18 +45,18 @@ def inventory(main, bib):
             return
         for number, original_line in enumerate(lines, 1):
             line = strip_comments(original_line)
-            if re.search(r"\\(?:input|include|subfile|cite\w*|nocite)\s*(?:\[[^]]*\])?\s*\{[^}]*$", line):
+            if re.search(r"\\(?:input|include|subfile|" + CITATION + r")\s*(?:\[[^]]*\])?\s*\{[^}]*$", line):
                 gaps.append({"path": str(path), "line": number, "reason": "multiline/unresolved command"})
             for match in re.finditer(r"\\(?:input|include|subfile)\s*\{([^}]+)\}", line):
                 name = match.group(1).strip()
                 if "\\" in name or "#" in name:
                     gaps.append({"path": str(path), "line": number, "reason": "macro-based input"})
                     continue
-                child = path.parent / name
+                child = base / name
                 walk(child if child.suffix else child.with_suffix(".tex"))
             for match in re.finditer(r"\\(?:addbibresource(?:\[[^]]*\])?|bibliography)\s*\{([^}]+)\}", line):
-                resources.extend(str(path.parent / name.strip()) for name in match.group(1).split(","))
-            for match in re.finditer(r"\\(nocite|(?:\w*)cite\w*|cite\w*)\s*(?:\[[^]]*\]\s*){0,2}\{([^}]+)\}", line):
+                resources.extend(str(base / name.strip()) for name in match.group(1).split(",") if name.strip())
+            for match in re.finditer(r"\\(" + CITATION + r")\s*(?:\[[^]]*\]\s*){0,2}\{([^}]+)\}", line):
                 kind, value = match.groups()
                 if "\\" in value or "#" in value:
                     gaps.append({"path": str(path), "line": number, "reason": "macro-based citation keys"})
@@ -78,9 +83,11 @@ def inventory(main, bib):
                         pending.append(parent)
     if nocite_all:
         included.update(entries)
-    if resources and bib.resolve() not in {Path(name).resolve() for name in resources} and bib.resolve() not in {
-        Path(name + ".bib").resolve() for name in resources}:
-        gaps.append({"reason": "provided Bib not matched to detected resources; multiple resources may be missing"})
+    resolved_resources = {Path(name if Path(name).suffix else name + ".bib").resolve() for name in resources}
+    if len(resolved_resources) > 1:
+        gaps.append({"reason": "multiple Bib resources detected; only provided Bib was inventoried"})
+    if resources and bib.resolve() not in resolved_resources:
+        gaps.append({"reason": "provided Bib not matched to detected resources"})
     return {"sources": visited, "bib": source_stamp(bib), "locations": locations,
             "undefined": sorted(included - set(entries)), "unused": sorted(set(entries) - included),
             "nocite_all": nocite_all, "resources": resources, "gaps": gaps,

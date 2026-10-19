@@ -175,11 +175,15 @@ def normalize(value):
     return " ".join(text.replace("{", "").replace("}", "").split()).casefold()
 
 
+def normalize_doi(value):
+    return re.sub(r"^(?:https?://(?:dx\.)?doi\.org/|doi:\s*)", "", normalize(value))
+
+
 def duplicate_flags(entries):
     groups = {}
     for key in sorted(entries):
         fields, _ = resolved_fields(key, entries)
-        doi = normalize(fields.get("doi", "")).removeprefix("https://doi.org/")
+        doi = normalize_doi(fields.get("doi", ""))
         title = normalize(fields.get("title", ""))
         authors = normalize(fields.get("author", []))
         year = normalize(fields.get("year", ""))
@@ -214,12 +218,14 @@ def compare_entries(original, candidate):
         field_names = sorted(set(old_fields) | set(new_fields))
         differences = {
             name: {"original": old_fields.get(name), "candidate": new_fields.get(name)}
-            for name in field_names if normalize(old_fields.get(name, "")) != normalize(new_fields.get(name, ""))
+            for name in field_names
+            if (normalize_doi if name == "doi" else normalize)(old_fields.get(name, "")) !=
+               (normalize_doi if name == "doi" else normalize)(new_fields.get(name, ""))
         }
         if source.type != target.type:
             issues.append("entry type differs")
-        old_doi = normalize(old_fields.get("doi", ""))
-        new_doi = normalize(new_fields.get("doi", ""))
+        old_doi = normalize_doi(old_fields.get("doi", ""))
+        new_doi = normalize_doi(new_fields.get("doi", ""))
         if old_doi and new_doi and old_doi != new_doi:
             issues.append("DOI conflict")
         old_title = normalize(old_fields.get("title", ""))

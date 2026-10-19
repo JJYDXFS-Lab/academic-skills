@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 
-from compare_candidates import InputError, load_entries, normalize, source_stamp, write_exclusive
+from compare_candidates import InputError, load_entries, normalize, normalize_doi, source_stamp, write_exclusive
 
 
 def retry_delay(value):
@@ -86,7 +86,7 @@ def arxiv_work(identifier, fetch=request_json):
 
 def candidate_for(key, entry, fetch=request_json, public_title_search=False):
     fields = entry.fields
-    doi = fields.get("doi", "").strip()
+    doi = normalize_doi(fields.get("doi", ""))
     arxiv = fields.get("eprint", "").strip() if fields.get("archiveprefix", "").lower() == "arxiv" else ""
     title = fields.get("title", "").strip()
     authors = entry.persons.get("author", [])
