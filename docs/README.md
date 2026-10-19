@@ -2,11 +2,11 @@
 
 This is the canonical, harness-agnostic source for two ordinary AgentSkills in `skills/`: YAML `name`/`description` frontmatter and an instruction body, with linked relative resources. Reading a skill does not grant manuscript access, network or Python execution permission, editing authority or automatic discovery. If tools are unavailable, report the coverage gap rather than treating unchecked items as passed. Parallelism is optional: sequential review of the same frozen revision and scope is equally valid.
 
-Where the host actually exposes subagents and scope merits it, both skills instruct agents to proactively delegate bounded read-only batches under available limits, then reconcile results before authoring one report per skill; this is a workflow instruction, not a runtime guarantee. A small or single-agent run remains valid and must report its actual execution mode and gaps.
+Both skills allow bounded read-only delegation when host policy permits; sequential review is equally valid. Report the actual mode and gaps.
 
 ## Install and use
 
-Readers need access to `JJYDXFS-Lab/academic-skills` (authenticate with normal GitHub credentials if private); these instructions do not make a private repository public. No Python package is needed to read or use the skills. Python 3 is needed only for optional triage helpers; BibTeX helpers require separately authorized `pybtex`, installed in an isolated environment when authorized.
+Readers need access to `JJYDXFS-Lab/academic-skills` (authenticate with normal GitHub credentials if private); these instructions do not make a private repository public. No Python package is needed to read or use the skills. Python 3.9+ is needed only for optional triage helpers; BibTeX helpers require separately authorized `pybtex`, installed in an isolated environment when authorized.
 
 In Codex CLI, use its bundled `$skill-installer` (available on installations that include it). Copyable request:
 
@@ -50,23 +50,6 @@ Report uncertain identities and coverage gaps; propose corrections only.
 ## Coding-agent invocation
 
 Fix the authoritative revision, scope and read-only boundary first. Example prompt: `Read /path/to/academic-skills/skills/latex-bib-audit/SKILL.md; on manuscript revision <hash>, audit bibliography metadata and citation identity, findings only.` For prose: `Read /path/to/academic-skills/skills/academic-prose-audit/SKILL.md; review sections <scope> on revision <hash> for contextual academic phrasing, findings only.` Supply access through the project's existing permissions. Layer 3 of the bibliography skill requires a separate explicit request and original-paper evidence. "AI flavor" is a stylistic impression, not AI detection, scoring or evasion; prose review does not scientifically validate claims.
-
-For a local Codex session (or any file-reading agent), an example user request is:
-
-```text
-Read /path/to/academic-skills/skills/latex-bib-audit/SKILL.md and
-/path/to/academic-skills/skills/academic-prose-audit/SKILL.md.
-For the authorized manuscript revision <hash>, main file <main.tex>, and
-sections <scope>, run bibliography Layers 1 and 2 and a contextual academic
-phrasing/register audit for natural, precise author voice
-on the same frozen revision. Layer 3 is disabled. Keep the manuscript and Bib
-files unchanged; author separate, fresh citation-audit.html and prose-audit.html
-in an authorized <report-directory> outside the source tree. Both must open
-offline with inline CSS, no external assets/network, and HTML-escaped sources.
-Report file:line/key, exact original and minimal suggestion/question side by
-side, why the phrase is problematic here, evidence, severity, uncertainty and
-coverage gaps. No auto-fix or AI-authorship inference.
-```
 
 The default reports are agent-authored standalone HTML, with a readable scope/revision summary, layer coverage where applicable, severity and unverified counts. Output names can be adapted; never overwrite a report. Markdown is optional on user request. Escape all manuscript-derived HTML; no frontend framework or JavaScript is needed.
 
