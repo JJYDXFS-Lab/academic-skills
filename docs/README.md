@@ -2,6 +2,35 @@
 
 This is the canonical, harness-agnostic source for two ordinary AgentSkills in `skills/`: YAML `name`/`description` frontmatter and an instruction body, with linked relative resources. Reading a skill does not grant manuscript access, network or Python execution permission, editing authority or automatic discovery. If tools are unavailable, report the coverage gap rather than treating unchecked items as passed. Parallelism is optional: sequential review of the same frozen revision and scope is equally valid.
 
+## Install and use
+
+Obtain the source first: `git clone https://github.com/JJYDXFS-Lab/academic-skills.git` works only for readers with access to this repository (authenticate using your normal GitHub setup if it is private). A public reader without access needs an authorized copy; these instructions do not make a private repository public. No Python package is needed to read or use the instructions. Python 3 is needed only to run the optional triage helpers; `pybtex` is additionally needed only for the BibTeX comparator, installed separately in an isolated environment when authorized.
+
+For Codex CLI, install **both complete directories** from a clean clone or other inspected artifact-free source into the documented user scope, without replacing an existing installation. Do not copy ignored local run artifacts or receipts from a development checkout:
+
+```bash
+mkdir -p "$HOME/.agents/skills"
+if [ -e "$HOME/.agents/skills/latex-bib-audit" ] ||
+   [ -e "$HOME/.agents/skills/academic-prose-audit" ]; then
+  printf '%s\n' 'Install stopped: inspect existing skill directories first.' >&2
+else
+  cp -R /path/to/academic-skills/skills/latex-bib-audit /path/to/academic-skills/skills/academic-prose-audit "$HOME/.agents/skills/"
+fi
+```
+
+Alternatively use `<manuscript-repo>/.agents/skills/` in place of `$HOME/.agents/skills/` for that repository only. Keep `SKILL.md`, `references/`, `scripts/`, tests and the comparator at the skill root together; copying only `SKILL.md` breaks relative resources. If you cannot install, point the agent at the two `SKILL.md` paths in the prompt instead. Codex scans user and repository skill locations; in Codex CLI run `/skills` to confirm both are listed, then mention `$latex-bib-audit` or `$academic-prose-audit`. It detects new/updated skills automatically; restart Codex if changes do not appear. This describes installation; no real Codex install/discovery was performed for this repository. See [official Codex skill locations](https://developers.openai.com/codex/skills).
+
+Copyable first-use request after discovery (replace placeholders and authorize the report directory):
+
+```text
+Use $latex-bib-audit and $academic-prose-audit on the authorized manuscript
+revision <hash>, main file <main.tex>, sections <scope>. Run bibliography
+Layers 1 and 2 and contextual prose review; Layer 3 is off. Do not edit
+the manuscript or Bib files. Write fresh standalone offline HTML reports
+outside the source tree in <authorized-report-dir>; do not overwrite files.
+Report uncertain identities and coverage gaps; propose corrections only.
+```
+
 ## Coding-agent invocation
 
 Fix the authoritative revision, scope and read-only boundary first. Example prompt: `Read /path/to/academic-skills/skills/latex-bib-audit/SKILL.md; on manuscript revision <hash>, audit bibliography metadata and citation identity, findings only.` For prose: `Read /path/to/academic-skills/skills/academic-prose-audit/SKILL.md; review sections <scope> on revision <hash>, findings only.` Supply access through the project's existing permissions. Layer 3 of the bibliography skill requires a separate explicit request and original-paper evidence. Prose review is not AI detection or scientific validation.
