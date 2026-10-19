@@ -43,6 +43,10 @@ For specifically requested claims, read relevant original-paper passages, method
 
 ## 4. Parallel work and reconciliation
 
+When subagents are actually available and scope benefits, proactively delegate bounded read-only entry and citation-occurrence batches within available limits/budget; routine delegation needs no separate approval. Otherwise run sequentially on the same fixed revision. First fix inventory, ownership and report schema; avoid nested uncontrolled spawning, duplicate retrieval and concurrent source or final-HTML writes. Collect actual worker findings, nonissues, gaps and failures; reassign bounded gaps or honestly mark coverage incomplete. Never claim parallel work without receipts; Layer 3 still needs explicit opt-in and resolved source identity per affected item.
+
+Delegation is conditional on host/project spawn policy and the same authorized privacy/locality boundary; availability alone never authorizes manuscript upload. One coordinator waits for actual worker results and reconciles the shared retrieval ledger before reporting.
+
 After one shared inventory, Layers 1 and 2 may run concurrently. Layer 3 runs only when explicitly enabled; proceed with unambiguous papers while other identities remain pending. Partition entries/occurrences into nonoverlapping read-only batches on the same revision. Reuse evidence by paper/version, bound requests/output and honor rate limits. No concurrent manuscript/Bib edits. A coordinator reconciles key-to-item-to-paper mappings and disagreements. Recheck affected mappings after revision changes; do not mix snapshots.
 
 **Done:** one owner per batch, common revision and visible unresolved dependencies.
@@ -50,6 +54,9 @@ After one shared inventory, Layers 1 and 2 may run concurrently. Layer 3 runs on
 ## 5. Report, then optionally correct
 
 Default deliverable: the agent authors a new, standalone `citation-audit.html` (name adaptable) in an authorized report location outside the source tree. Never overwrite an existing report. It must open offline with inline CSS, no CDN/network requests/external assets and no framework or JavaScript requirement. Include a readable summary of revision, scope, exclusions, each layer's enabled/disabled state, coverage and unverified counts, severity totals and gaps. Per finding show layer, key/occurrence, TeX and Bib `file:line`, paper/version/source, status, severity, original text/field, evidence/issue and minimal suggested correction; mark inapplicable fields. Native `<details>` may hold long evidence. HTML-escape all source and evidence text; never execute manuscript HTML. Markdown is optional on user request. The comparison helper's JSON remains separate triage output; it does not generate the full audit report.
+
+State actual execution mode (sequential or parallel), worker count, receipts/failures and any incomplete portion in the report summary.
+
 Escape HTML attribute values as well as text; render external Bib URLs as links only after validating an `https:` or `http:` scheme. Keep local/file and script schemes as escaped plain text.
 
 For key/item identity findings, show the key, actual item identity, key clues, citation locations/context (or `not cited`), identity/history evidence, confidence/status and suggested human action. Link an L1 entry finding to related L2 citation findings without counting the same identity concern twice. Do not resolve a suspected mismatch by guessing the intended replacement.
@@ -57,3 +64,7 @@ For key/item identity findings, show the key, actual item identity, key clues, c
 Reserve `machine-checked` for structural results and `source-verified` for inspected evidence. Highlight wrong-work mappings, identity/DOI conflicts and unsupported claims; metadata/key success never implies claim support. Default deliverable is read-only findings and minimal proposed patches. Edit only after explicit approval and project rules; preserve keys except targeted proven conflicts. Rerun affected inventory, authorized build/lint without shell escape, and affected source judgments. Build success is not semantic validation.
 
 **Done:** the fresh HTML report states revision, layer states, counts, evidence, unknowns and corrections; approved edits have separate before/after checks.
+
+## Sources and adaptations
+
+The optional comparison helper uses [pybtex](https://pybtex.org/) for BibTeX parsing (an external dependency, not bundled here; [official project source and license](https://bitbucket.org/pybtex-devs/pybtex/src/)); installing it remains separately authorized. [DBLP's public API guidance](https://dblp.org/faq/13500484.html) informs the [candidate-retrieval reference](references/dblp-candidate-retrieval.md), not a claim that DBLP validates manuscript citations. That reference also draws conceptual lessons from an owner-provided notebook: no private identity, notebook code or input was copied. The prose skill's academic phrasing sources are not bibliography sources; these references do not relicense third-party content.

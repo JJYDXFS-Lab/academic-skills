@@ -2,6 +2,8 @@
 
 This is the canonical, harness-agnostic source for two ordinary AgentSkills in `skills/`: YAML `name`/`description` frontmatter and an instruction body, with linked relative resources. Reading a skill does not grant manuscript access, network or Python execution permission, editing authority or automatic discovery. If tools are unavailable, report the coverage gap rather than treating unchecked items as passed. Parallelism is optional: sequential review of the same frozen revision and scope is equally valid.
 
+Where the host actually exposes subagents and scope merits it, both skills instruct agents to proactively delegate bounded read-only batches under available limits, then reconcile results before authoring one report per skill; this is a workflow instruction, not a runtime guarantee. A small or single-agent run remains valid and must report its actual execution mode and gaps.
+
 ## Install and use
 
 Readers need access to `JJYDXFS-Lab/academic-skills` (authenticate with normal GitHub credentials if private); these instructions do not make a private repository public. No Python package is needed to read or use the skills. Python 3 is needed only for optional triage helpers; `pybtex` is separately needed only for the BibTeX comparator, installed in an isolated environment when authorized.
