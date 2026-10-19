@@ -14,7 +14,7 @@ def strip_comments(line):
     return re.split(r"(?<!\\)%", line, maxsplit=1)[0]
 
 
-CITATION = r"(?:nocite|(?:cite|autocite|parencite|textcite|footcite|supercite|smartcite)\w*)"
+CITATION = r"(?:nocite|(?:[Cc]ite|[Aa]utocite|[Pp]arencite|[Tt]extcite|[Ff]ootcite|[Ss]upercite|[Ss]martcite)\w*)"
 
 
 def inventory(main, bib):
@@ -58,6 +58,9 @@ def inventory(main, bib):
                 resources.extend(str(base / name.strip()) for name in match.group(1).split(",") if name.strip())
             for match in re.finditer(r"\\(" + CITATION + r")\s*(?:\[[^]]*\]\s*){0,2}\{([^}]+)\}", line):
                 kind, value = match.groups()
+                if line[match.end():].lstrip().startswith("{"):
+                    gaps.append({"path": str(path), "line": number,
+                                 "reason": "additional citation argument groups require manual review"})
                 if "\\" in value or "#" in value:
                     gaps.append({"path": str(path), "line": number, "reason": "macro-based citation keys"})
                     continue

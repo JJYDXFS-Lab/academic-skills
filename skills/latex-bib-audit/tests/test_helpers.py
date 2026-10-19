@@ -171,6 +171,22 @@ class HelperTests(unittest.TestCase):
             self.assertEqual(len(report["sources"]), 3)
             self.assertEqual(report["gaps"], [])
 
+    def test_capitalized_citations_and_extra_key_groups_are_not_silent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "main.tex").write_text(
+                "\Textcite{first}\Parencite{second}\Citet{third}\Citep{fourth}\cites{fifth}{sixth}\n",
+                encoding="utf-8")
+            bib = root / "ref.bib"
+            bib.write_text("dummy", encoding="utf-8")
+            with mock.patch.object(citation_inventory, "load_entries", return_value={
+                key: entry({}) for key in ("first", "second", "third", "fourth", "fifth", "sixth")
+            }):
+                report = citation_inventory.inventory(root / "main.tex", bib)
+            self.assertEqual(set(report["locations"]), {"first", "second", "third", "fourth", "fifth"})
+            self.assertTrue(any("additional citation argument groups" in gap["reason"]
+                                for gap in report["gaps"]))
+
     def test_multiple_bib_resources_and_aux_freshness(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
