@@ -20,7 +20,9 @@ QUESTIONS = (
      "Is this adjective warranted by the stated evidence and disciplinary usage?"),
 )
 
-PROSE_ENVIRONMENTS = {"document", "abstract", "itemize", "enumerate", "description"}
+PROSE_ENVIRONMENTS = {"document", "abstract", "itemize", "enumerate", "description",
+                      "figure", "figure*", "table", "table*", "theorem", "proof",
+                      "remark", "minipage", "center"}
 PROSE_COMMANDS = {"emph", "textit", "textbf", "footnote", "caption", "section", "subsection", "paragraph"}
 COMMAND = re.compile(r"\\([A-Za-z@]+|[^\n])")
 ENVIRONMENT = re.compile(r"\\(begin|end)\s*\{([^{}]+)\}")
@@ -251,19 +253,40 @@ def scan_markdown(source):
                 hide(start, position)
                 continue
         character = source[position]
-        if character == "`":
+        if source.startswith("<!--", position):
+            closing = source.find("-->", position + 4)
+            if closing == -1:
+                raise CoverageError(source, position, "unclosed Markdown HTML comment")
+            position = closing + 3
+        elif source.startswith("$$", position) or character == "$":
+            delimiter = "$$" if source.startswith("$$", position) else "$"
+            closing = source.find(delimiter, position + len(delimiter))
+            if closing == -1:
+                raise CoverageError(source, position, "unclosed Markdown math span")
+            position = closing + len(delimiter)
+        elif source.startswith("\\(", position) or source.startswith("\\[", position):
+            delimiter = "\\)" if source.startswith("\\(", position) else "\\]"
+            closing = source.find(delimiter, position + 2)
+            if closing == -1:
+                raise CoverageError(source, position, "unclosed Markdown math span")
+            position = closing + 2
+        elif character == "`":
             run = re.match(r"`+", source[position:]).group()
             closing = source.find(run, position + len(run))
             if closing == -1:
                 raise CoverageError(source, position, "unclosed Markdown code span")
             position = closing + len(run)
         elif character == "[" or source.startswith("![", position):
+            citation = (re.match(r"\[[^]\n]*-?@[A-Za-z0-9_:.\-/]+[^]\n]*\]", source[position:])
+                        if character == "[" else None)
             link = re.match(r"!?\[[^]\n]*\]\([^\n)]*\)|!?\[[^]\n]*\]\[[^]\n]*\]", source[position:])
-            if link:
-                position += len(link.group())
+            if citation or link:
+                position += len((citation or link).group())
             else:
                 position += 1
                 continue
+        elif character == "@" and re.match(r"@[A-Za-z0-9_:.\-/]+", source[position:]):
+            position += len(re.match(r"@[A-Za-z0-9_:.\-/]+", source[position:]).group())
         elif character in ('"', '“') and not (character == '"' and position > 0 and source[position - 1].isdigit()):
             closing_mark = '"' if character == '"' else '”'
             closing = source.find(closing_mark, position + 1)
@@ -287,7 +310,7 @@ def candidates(source, visible=None):
         if line_end == -1:
             line_end = len(visible)
         context = " ".join(visible[max(line_start, start - 65):min(line_end, end + 65)].split())
-        phrase = " ".join(source[start:end].split())
+        phrase = " ".join(visible[start:end].split())
         return line, phrase, context, question
 
     for pattern, question in QUESTIONS:

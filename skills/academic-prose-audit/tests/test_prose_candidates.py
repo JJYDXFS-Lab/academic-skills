@@ -117,6 +117,35 @@ class CandidateTests(unittest.TestCase):
         self.assertFalse(any("short" in context or "hidden" in context for _, _, context, _ in candidates(source)))
         self.assertEqual(len(found), 9)
 
+    def test_float_captions_theorem_and_protected_spans(self):
+        source = ("\\begin{figure}[ht]\\caption[You can see short]{A lot of visible "
+                  "\\cite{private_key} text $Needless to say$}\\end{figure}\n"
+                  "\\begin{figure*}\\caption{You can see panels}\\end{figure*}\n"
+                  "\\begin{table}\\caption{A lot of rows}"
+                  "\\begin{tabular}{cc}Needless to say & You can see\\end{tabular}\\end{table}\n"
+                  "\\begin{table*}\\caption{You can see columns}\\end{table*}\n"
+                  "\\begin{theorem}[A lot of private title] A lot of proof.\\end{theorem}\n"
+                  "\\begin{proof}You can see why.\\end{proof}\n"
+                  "\\begin{remark}A lot of context.\\end{remark}\n"
+                  "\\begin{minipage}{4cm}You can see this.\\end{minipage}\n"
+                  "\\begin{center}A lot of text.\\end{center}\n"
+                  "\\begin{equation}Needless to say\\end{equation}\n")
+        found = list(candidates(source))
+        self.assertEqual([line for line, phrase, _, question in found
+                          if phrase.lower() == "a lot of" and "quantifier" in question],
+                         [1, 3, 5, 7, 9])
+        self.assertEqual([line for line, phrase, _, question in found
+                          if phrase.lower() == "you can see" and "reader" in question],
+                         [2, 4, 6, 8])
+        self.assertFalse(any("private" in phrase or "Needless" in context for _, phrase, context, _ in found))
+
+    def test_repeated_openings_do_not_print_citations_or_math(self):
+        source = ("These results suggest \\cite{private_key} $secret$ value. "
+                  "These results suggest \\cite{another_key} $hidden$ more.\n")
+        repeated = [phrase for _, phrase, _, question in candidates(source)
+                    if "sentences start" in question]
+        self.assertEqual(repeated, ["These results suggest", "These results suggest"])
+
     def test_plain_quotes_inches_and_accents(self):
         source = ('A lot of 5" samples. "You can see" is quoted.\\\"o accents.\n'
                   '“Needless to say” is literal.\nYou can see the visible prose.\n')
@@ -146,6 +175,40 @@ class CandidateTests(unittest.TestCase):
             scan_markdown("```\nA lot of text")
         with self.assertRaises(CoverageError):
             scan_markdown("`A lot of text")
+
+    def test_markdown_comments_math_citations_private(self):
+        source = ("<!-- You can see private\nA lot of secret -->\n"
+                  "A lot of visible [@You-can-see; -@Needless-to-say] and @private_key.\n"
+                  "$You can see hidden$ $$A lot of private$$ \\(Needless to say\\) "
+                  "\\[You can see hidden\\]\nYou can see public.\n")
+        visible = scan_markdown(source).visible
+        found = list(candidates(source, visible))
+        self.assertEqual([(line, phrase) for line, phrase, _, _ in found],
+                         [(3, "A lot of"), (5, "You can see")])
+        self.assertFalse(any("private" in phrase or "hidden" in context for _, phrase, context, _ in found))
+        for source in ("<!-- A lot of", "$A lot of", "$$A lot of", "\\(A lot of"):
+            with self.subTest(source=source), self.assertRaises(CoverageError):
+                scan_markdown(source)
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "private.md"
+            path.write_text("A lot of visible. <!-- private_key", encoding="utf-8")
+            result = subprocess.run([sys.executable, str(SCRIPT), str(path)],
+                                    capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(result.stdout, "")
+            path.write_text("<!-- private_key A lot of -->\nA lot of visible [@private_key] $secret$.\n",
+                            encoding="utf-8")
+            result = subprocess.run([sys.executable, str(SCRIPT), str(path)],
+                                    capture_output=True, text=True, check=True)
+            self.assertIn("A lot of", result.stdout)
+            self.assertNotIn("private_key", result.stdout)
+            self.assertNotIn("secret", result.stdout)
+
+    def test_straight_quote_fail_closed(self):
+        for scanner in (scan_prose, scan_markdown):
+            with self.subTest(scanner=scanner), self.assertRaisesRegex(CoverageError, "unclosed"):
+                scanner('A lot of prose. "You can see private text')
 
     def test_cli_txt_md_read_only_and_docx_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
