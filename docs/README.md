@@ -6,7 +6,7 @@ Where the host actually exposes subagents and scope merits it, both skills instr
 
 ## Install and use
 
-Readers need access to `JJYDXFS-Lab/academic-skills` (authenticate with normal GitHub credentials if private); these instructions do not make a private repository public. No Python package is needed to read or use the skills. Python 3 is needed only for optional triage helpers; `pybtex` is separately needed only for the BibTeX comparator, installed in an isolated environment when authorized.
+Readers need access to `JJYDXFS-Lab/academic-skills` (authenticate with normal GitHub credentials if private); these instructions do not make a private repository public. No Python package is needed to read or use the skills. Python 3 is needed only for optional triage helpers; BibTeX helpers require separately authorized `pybtex`, installed in an isolated environment when authorized.
 
 In Codex CLI, use its bundled `$skill-installer` (available on installations that include it). Copyable request:
 
@@ -33,7 +33,7 @@ else
 fi
 ```
 
-For a project-local fallback, use the agent's documented project skill location instead and create its parent directory first. Keep `SKILL.md`, `references/`, `scripts`, tests and the comparator together; copying only `SKILL.md` breaks relative resources. Restart Codex after manual installation. If installation is unavailable, point the agent at both `SKILL.md` paths in the prompt instead.
+For a project-local fallback, use the agent's documented project skill location instead and create its parent directory first. Keep each complete skill directory (`SKILL.md`, `references/`, `scripts/`, `tests/`) together; copying only `SKILL.md` breaks relative resources. Claude Code can discover skills in its documented user or project skill directory; confirm discovery in that installation rather than assuming Codex paths apply. Restart the relevant agent after manual installation. If installation is unavailable, point the agent at both `SKILL.md` paths in the prompt instead.
 
 Copyable first-use request after discovery (replace placeholders and authorize the report directory):
 
@@ -70,7 +70,7 @@ coverage gaps. No auto-fix or AI-authorship inference.
 
 The default reports are agent-authored standalone HTML, with a readable scope/revision summary, layer coverage where applicable, severity and unverified counts. Output names can be adapted; never overwrite a report. Markdown is optional on user request. Escape all manuscript-derived HTML; no frontend framework or JavaScript is needed.
 
-The plain Python optional triage tools are `python3 skills/latex-bib-audit/compare_candidates.py --help` and `python3 skills/academic-prose-audit/scripts/prose_candidates.py --help`. The former compares two existing same-key BibTeX files and requires separately installed `pybtex`; its real-parser integration tests are skipped when that library is absent, so actual parser behavior remains unverified here. Use `python3 skills/latex-bib-audit/compare_candidates.py original.bib candidate.bib --output /fresh/report-directory/comparison.json` to create a **new** report exclusively after a successful comparison. The latter is stdlib-only and prints non-exhaustive questions for explicitly named TeX files. Neither tool discovers the project or performs a complete audit. Both can print source-derived content: keep reports, stdout and stderr local/private. Never redirect stdout into a source or existing report: shell redirection can truncate a file before the script runs. The agent, not these scripts, must locate sources and judge evidence.
+Optional helpers: `python3 skills/latex-bib-audit/scripts/compare_candidates.py original.bib candidate.bib --output /fresh/report-directory/comparison.json` writes a new same-key comparison report. The same `scripts/` directory has approximate citation inventory and opt-in selected-key public-metadata retrieval; read the bibliography skill for limits, including the separate public-title opt-in. BibTeX helpers need `pybtex`; its real-parser tests are skipped when that dependency is absent. `python3 skills/academic-prose-audit/scripts/prose_candidates.py path/to/section.tex` is stdlib-only and locates non-exhaustive questions in explicitly named `.tex`, `.md` or `.txt` files. None discovers a project or completes an audit. Outputs can contain source text: keep them private, and never redirect stdout into source or an existing report (shell truncation happens before the script runs).
 
 For other coding agents, use their own documented installation or project-local skill location and confirm discovery. Do not change global agent configuration as part of using this repo. Apply the manuscript project's locality, privacy, collaborator and editing rules.
 
