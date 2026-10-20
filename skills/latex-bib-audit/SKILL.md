@@ -15,11 +15,17 @@ Record main TeX, active Bib resources, engine/style, reachable sources, exclusio
 
 Optional helpers use separately authorized `pybtex` and `<skill-dir>` as the absolute path to this skill directory (no installation here): `python3 <skill-dir>/scripts/compare_candidates.py original.bib candidate.bib --output NEW.json` compares same-key public fields; `python3 <skill-dir>/scripts/citation_inventory.py main.tex refs.bib --aux fresh.aux` prints a static JSON inventory. For selected keys, `python3 <skill-dir>/scripts/fetch_candidates.py refs.bib --keys keyA keyB --limit 2 --candidate NEW.bib --ledger NEW.json` requests public DOI/arXiv metadata with explicit network permission and new output paths. Keep output paths distinct from source and from one another; never redirect stdout over an existing file. Title+author queries require `--public-title-search` **only after confirming the fields are public**. Candidate `.bib` output may be reserialized; original source bytes stay untouched. Candidates do not establish identity or claim support. See [candidate retrieval](references/dblp-candidate-retrieval.md) before lookup; reconcile helper gaps manually.
 
+When subagents are available and the scope benefits, proactively assign disjoint read-only Layer 1 entry and Layer 2 citation batches against the same fixed snapshot and inventory. Workers return findings and coverage gaps; one coordinator collects, deduplicates and reconciles them before the final report. Otherwise perform the same checks sequentially. Do not mix revisions or claim parallel coverage without results.
+
 ## Judgment
 
 For Layer 1 compare type, title, ordered authors, year, venue, pages/article number, DOI, URL and version with a publisher/DOI record, official proceedings, or appropriate arXiv version. Flag possible duplicate DOI and title+authors+year across different keys; do not auto-merge. Check unused entries too; historical keys may be intentional. Distinguish `machine-checked` from `source-verified`; an index or similar title is not primary evidence.
 
+For every active entry, including uncited ones, compare identifiable author, year and title clues in its key with the actual item's metadata. Combined conflicts warrant investigation of a possible key-to-item identity mismatch, not an automatic error or inferred cause: keys may be arbitrary or legitimate legacy aliases. Do not infer the intended work from key spelling alone or automatically rename the key or rewrite the item.
+
 For Layer 2 resolve each reachable citation to its actual item and context; report missing, ambiguous, unused, wrong-work and wrong-version mappings without guessing a replacement. `\nocite{*}` adds entries, not prose evidence. Record severity and confidence separately; do not label Layer 2 as support verification. For **explicitly enabled** Layer 3, inspect the primary paper/version with a precise section/page/figure/table pinpoint; an abstract or snippet does not establish detailed support. See [claim evidence](references/claim-evidence.md) only for Layer 3.
+
+Compare nearby citation context with the resolved item's identity. Distinguish an odd key citing the correct work from an evidenced wrong-work citation; if the intended item remains unclear, mark it unresolved. Key spelling alone cannot establish wrong-work or select a replacement.
 
 ## Output
 
