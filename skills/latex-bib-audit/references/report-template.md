@@ -4,9 +4,9 @@ Use [the self-contained HTML asset](../assets/citation-audit-template.html) as t
 
 ## Language switching
 
-The demo includes a Chinese / English selector for interface labels and synthetic prose. Switching preserves record IDs, filters, disclosure state, and counts; search matches both language versions. English is the no-script fallback. No translation API or external resource is used.
+The demo includes a Chinese / English selector for interface labels and synthetic audit commentary. Manuscript-context examples and source excerpts remain in their original English in both modes. Switching preserves record IDs, filters, disclosure state, and counts; search matches both language versions. English is the primary language, the explicit initial selection, and the no-script fallback; do not auto-switch based on browser locale. Chinese is an optional interface selected by the reader. No translation API or external resource is used.
 
-When replacing the demo, update the translation dictionary for authored UI/analysis text and remove demo translations. Preserve verbatim manuscript context and source excerpts in their original language. If translations of real evidence are helpful, label them as translations and keep the original visible; never present translated text as a verbatim original. The demo's translated quotations are invented examples only. The selector is not a machine translator for newly inserted content.
+When replacing the demo, update the translation dictionary for authored UI/analysis text and remove demo translations. Preserve verbatim manuscript context and source excerpts in their original language. If translations of real evidence are helpful, label them as translations and keep the original visible; never present translated text as a verbatim original. The template excludes `pre`, `blockquote`, `code`, and any element marked `data-original` (including descendants) from translation. Mark source titles or other verbatim evidence outside these containers with `data-original` and their actual `lang` when known. The selector is not a machine translator for newly inserted content.
 
 ## Populate without changing judgments
 
