@@ -1,0 +1,20 @@
+# Synthetic L3 calibration cases
+
+All names, prose, and evidence summaries below are invented. They are not quotations or findings about real papers. When evaluating a skill revision, give an independent reviewer the claim and evidence columns first, then compare its scoped judgment against the expected boundary. Explain disagreements; a text-matching test cannot establish semantic correctness.
+
+| Case | Claim and citation placement | Available original evidence | Expected boundary |
+|---|---|---|---|
+| Local insertion | “Shared spaces—scaled by PairNet [A]—enable image search and motivate audio interfaces.” | A establishes large-scale image–text alignment, not audio. | Supported for the inserted attribution; do not charge A with proving the later audio application. |
+| Collective background | “Contrastive graph learning uses views such as edge deletion and attribute masking; other designs contrast sampled tokens [A, B].” | A implements deletion/masking; B implements token contrast and discusses augmentation in related work. | Collectively supported; B need not implement A's augmentations. |
+| Explicit mechanism | “TokenNet creates its views by deleting edges [B].” | B explicitly uses token sampling without graph augmentation. | Contradicted; broad membership in graph contrastive learning does not repair this attribution. |
+| Capability versus release | “In June, OmniNet introduced a model accepting speech, text, images, and video [C].” | June announcement confirms these model inputs; public interfaces ship in stages. | Supported; simultaneous availability was not claimed. |
+| Concrete numeric input | “SequenceNet renders measurements as charts for its visual encoder [D].” | D embeds scalar measurements with a gated feed-forward block; a separate frozen text encoder supplies labels. | Contradicted; a shared neural component does not make the input visual. |
+| Optional detail | “IndexNet learns temporal representations [E].” | E uses learned time indices and two auxiliary losses. | Supported; failure to list both losses is not a missing qualification. |
+| Material condition | “Model F improves accuracy on both clean and corrupted inputs [F].” | F improves only on corrupted inputs and loses accuracy on clean inputs. | Adverse finding warranted; “both” changes the empirical result. |
+| Explicit numeric range | “Compression reaches 12-fold [G].” | G's relevant table and appendix cap the reported result at 7-fold under the claimed setting. | Adverse finding warranted after checking the relevant version and conditions. |
+| Missing excerpt coverage | “Tokenizer H transfers across sampling rates [H].” | Abstract omits rates; the transfer section explicitly evaluates differing rates. | Supported after reading the relevant section; the abstract's omission is not a support gap. |
+| Future proposal | “A future benchmark should include text-guided image search [I, J].” | I implements the task; J benchmarks image-only retrieval and explicitly proposes text-guided extensions. | Collectively supported; do not infer that J already implements the proposed task. |
+| Theorem quantifiers | “Theorem K proves every channel fails simultaneously [K].” | K proves each channel has some probability of failing, and at least one fails with high probability. | Qualification or contradiction warranted; the explicit simultaneous universal claim is stronger. Do not add “simultaneously” when the manuscript does not say it. |
+| Inspectable gap | “Evaluator L explains mean pooling through feature collapse [L].” | Relevant full-text methods and results concern human evaluation protocols; no inspected passage supports the pooling mechanism. | Record inspected-but-unsupported, not access failure or invented replacement. Search absence alone is insufficient. |
+
+Keep the last two evidence states distinct: a source that could not be accessed remains unresolved; a source inspected without finding the claimed support has an identified support gap. Neither becomes contradicted merely because no matching passage was found.
