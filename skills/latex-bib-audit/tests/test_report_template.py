@@ -63,28 +63,38 @@ const vm = require('node:vm');
 function el(id){return {id,value:'all',hidden:false,open:false,children:[],listeners:{},
  textContent:'',tagName:'DIV',parentElement:null,
  addEventListener(n,fn){this.listeners[n]=fn;},
- append(x){this.children.push(x);},scrollIntoView(){this.scrolled=true;}};}
+ append(x){this.children.push(x);},replaceChildren(){this.children=[];},scrollIntoView(){this.scrolled=true;}};}
 const ids={};
-for(const id of ['query','status','severity','category','gap','totals','severity-totals','visible','info-count','information-group','attention-group','reset'])ids[id]=el(id);
+for(const id of ['language','query','status','severity','category','gap','totals','severity-totals','visible','info-count','information-group','attention-group','reset'])ids[id]=el(id);
 ids.query.value='';ids['information-group'].tagName='DETAILS';
 const raw=RECORDS;
 const cards=raw.map(r=>{
  const c=el(r.id);c.dataset={};
  for(const [k,v] of Object.entries(r))if(k.startsWith('data-'))c.dataset[k.slice(5)]=v;
- c.textContent=r.id+' synthetic prose';c.classList={contains:x=>x==='record'};
+ c.textContent=r.id+' synthetic prose '+(r.id==='C0005'?'Directly supported':'');c.classList={contains:x=>x==='record'};
  c.parentElement=c.dataset.status==='directly_supported'?ids['information-group']:ids['attention-group'];
  c.closest=selector=>selector==='#information-group'&&c.parentElement===ids['information-group']?c.parentElement:null;
  ids[c.id]=c;return c;
 });
 const link=el('link');link.hash='#C0005';
-const document={getElementById:id=>ids[id],createElement:tag=>el(tag),
+const translatedNode={nodeValue:'Directly supported',parentElement:{closest(){return null;}}};
+const document={documentElement:{lang:'en'},createTreeWalker(){let done=false;return {currentNode:null,nextNode(){if(done)return false;done=true;this.currentNode=translatedNode;return true;}};},getElementById:id=>ids[id],createElement:tag=>el(tag),
  querySelectorAll:sel=>sel==='.record'?cards:sel==='.record-link'?[link]:sel==='details'?[ids['information-group']]:[]};
 const window={location:{hash:''},listeners:{},addEventListener(n,fn){this.listeners[n]=fn;}};
-vm.runInNewContext(SCRIPT,{document,window});
+vm.runInNewContext(SCRIPT,{document,window,NodeFilter:{SHOW_TEXT:4}});
 assert.match(ids['severity-totals'].textContent,/No issue \/ information 1/);
 assert.match(ids['severity-totals'].textContent,/Low 2/);
 assert.match(ids['severity-totals'].textContent,/Medium 2/);
 assert.equal(ids.totals.children.length,4);
+ids.language.value='zh';ids.language.listeners.change();
+assert.equal(document.documentElement.lang,'zh-CN');assert.equal(translatedNode.nodeValue,'直接支持');
+assert.match(ids['severity-totals'].textContent,/无问题／信息记录 1/);
+assert.equal(ids.totals.children.length,4);
+ids.query.value='直接支持';ids.query.listeners.input();assert.deepEqual(cards.filter(c=>!c.hidden).map(c=>c.id),['C0005']);
+ids.language.value='en';ids.language.listeners.change();
+assert.equal(translatedNode.nodeValue,'Directly supported');assert.equal(ids.query.value,'直接支持');
+assert.deepEqual(cards.filter(c=>!c.hidden).map(c=>c.id),['C0005']);
+ids.reset.listeners.click();
 assert.equal(ids['information-group'].open,false);
 ids.status.value='issues';ids.status.listeners.change();assert.equal(cards.filter(c=>!c.hidden).length,4);
 ids.category.value='vision';ids.severity.value='medium';ids.category.listeners.change();

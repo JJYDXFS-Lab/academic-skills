@@ -1,6 +1,12 @@
 # Offline report template
 
-Use [the self-contained HTML asset](../assets/citation-audit-template.html) as an optional presentation starting point. Copy it to a new authorized output path, replace every synthetic record and scope statement, and localize labels if useful. The asset is a layout example, not an auditor or evidence generator. Its example records are L3-only; do not enable L3 merely to populate the template. For an L1/L2-only audit, replace the L3 labels, status taxonomy, filters, and evidence fields with the appropriate layer-specific ones and state that L3 was not performed. Never represent unreviewed inventory entries as supported.
+Use [the self-contained HTML asset](../assets/citation-audit-template.html) as the default presentation starting point unless the user requests another layout. Copy it to a new authorized output path, replace every synthetic record and scope statement, and localize labels if useful. The asset is a layout example, not an auditor or evidence generator. Its example records are L3-only; do not enable L3 merely to populate the template. For an L1/L2-only audit, replace the L3 labels, status taxonomy, filters, and evidence fields with the appropriate layer-specific ones and state that L3 was not performed. Never represent unreviewed inventory entries as supported.
+
+## Language switching
+
+The demo includes a Chinese / English selector for interface labels and synthetic prose. Switching preserves record IDs, filters, disclosure state, and counts; search matches both language versions. English is the no-script fallback. No translation API or external resource is used.
+
+When replacing the demo, update the translation dictionary for authored UI/analysis text and remove demo translations. Preserve verbatim manuscript context and source excerpts in their original language. If translations of real evidence are helpful, label them as translations and keep the original visible; never present translated text as a verbatim original. The demo's translated quotations are invented examples only. The selector is not a machine translator for newly inserted content.
 
 ## Populate without changing judgments
 
